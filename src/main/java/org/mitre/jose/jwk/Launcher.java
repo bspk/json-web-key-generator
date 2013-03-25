@@ -79,7 +79,7 @@ public class Launcher {
         		if (keySize % 8 != 0) {
         			printUsageAndExit("Key size for RSA must be divisible by 8, got " + keySize);
         		}
-        		//jwk = RSAKeyMaker.make(keySize);
+        		jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.OCT)) {
         		if (keySize % 8 != 0) {
         			printUsageAndExit("Key size for octet sequence must be divisible by 8, got " + keySize);
