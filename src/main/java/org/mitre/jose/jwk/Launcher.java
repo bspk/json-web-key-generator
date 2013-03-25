@@ -33,7 +33,7 @@ public class Launcher {
     	
     	options.addOption("t", true, "Key Type, one of: " + KeyType.RSA + ", " + KeyType.OCT);
     	options.addOption("s", true, "Key Size in bits, must be an integer, generally divisible by 8");
-    	options.addOption("u", true, "Usage, one of: " + Use.ENCRYPTION + ", " + Use.SIGNATURE + ". Defaults to " + Use.SIGNATURE);
+    	options.addOption("u", true, "Usage, one of: enc, sig. Defaults to sig");
     	options.addOption("a", true, "Algorithm.");
     	options.addOption("i", true, "Key ID (optional)");
     	options.addOption("p", false, "Display public key separately");
@@ -68,10 +68,14 @@ public class Launcher {
         	if (Strings.isNullOrEmpty(kid)) {
         		kid = null;
         	}
-        	Use keyUse = Use.SIGNATURE;
-        	if (use != null) {
-        		keyUse = Use.valueOf(use);
-        	}
+        	Use keyUse = null;
+    		if (use == null || use.equals("sig")) {
+    			keyUse = Use.SIGNATURE;
+    		} else if (use.equals("enc")) {
+    			keyUse = Use.ENCRYPTION;
+    		} else {
+    			printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
+    		}
         	
         	Algorithm keyAlg = null;
         	if (!Strings.isNullOrEmpty(alg)) {
