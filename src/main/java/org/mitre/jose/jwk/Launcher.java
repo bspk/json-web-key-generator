@@ -8,6 +8,10 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
@@ -32,6 +36,7 @@ public class Launcher {
     	options.addOption("u", true, "Usage, one of: " + Use.ENCRYPTION + ", " + Use.SIGNATURE + ". Defaults to " + Use.SIGNATURE);
     	options.addOption("a", true, "Algorithm.");
     	options.addOption("i", true, "Key ID (optional)");
+    	options.addOption("p", false, "Display public key separately");
 
     	//options.addOption("g", false, "Load GUI");
     	
@@ -92,7 +97,29 @@ public class Launcher {
         	}
 
         	// if we got here, we can print the key
-        	System.out.println(jwk.toJSONString());
+
+        	System.out.println("Full key:");
+
+        	// round trip it through GSON to get a prettyprinter
+        	Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        	
+        	JsonElement json = new JsonParser().parse(jwk.toJSONString());        	
+        	System.out.println(gson.toJson(json));
+        	
+        	if (cmd.hasOption("p")) {
+        		System.out.println(); // spacer
+        		
+        		// also print public key, if possible
+        		JWK pub = jwk.toPublicJWK();
+        		
+        		if (pub != null) {
+            		System.out.println("Public key:");
+	        		JsonElement pubJson = new JsonParser().parse(pub.toJSONString());
+	        		System.out.println(gson.toJson(pubJson));
+        		} else {
+        			System.out.println("No public key.");
+        		}
+        	}
 
     	} catch (NumberFormatException e) {
     		printUsageAndExit("Invalid key size: " + e.getMessage());
