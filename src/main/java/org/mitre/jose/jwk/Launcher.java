@@ -142,7 +142,7 @@ public class Launcher {
     	}
     	
     	HelpFormatter formatter = new HelpFormatter();
-    	formatter.printHelp( "java -jar json-web-key-generator.jar -t <keyType> -s <keySize>", options );
+    	formatter.printHelp( "java -jar json-web-key-generator.jar -t <keyType> -s <keySize> [-u <keyUsage> -a <algorithm> -i <keyId> -p]", options );
     	
     	// kill the program
     	System.exit(1);
