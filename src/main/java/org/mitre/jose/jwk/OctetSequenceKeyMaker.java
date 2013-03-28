@@ -21,7 +21,7 @@ public class OctetSequenceKeyMaker {
 	 * @param keySize in bits
 	 * @return
 	 */
-    public static JWK make(Integer keySize, Use use, Algorithm alg, String kid) {
+    public static OctetSequenceKey make(Integer keySize, Use use, Algorithm alg, String kid) {
     	
     	// holder for the random bytes
     	byte[] bytes = new byte[keySize / 8];

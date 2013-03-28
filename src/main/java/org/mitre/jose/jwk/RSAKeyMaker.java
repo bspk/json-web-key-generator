@@ -27,7 +27,7 @@ public class RSAKeyMaker {
 	 * @param kid
 	 * @return
 	 */
-    public static JWK make(Integer keySize, Use keyUse, Algorithm keyAlg, String kid) {
+    public static RSAKey make(Integer keySize, Use keyUse, Algorithm keyAlg, String kid) {
     	
     	try {
 	        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
