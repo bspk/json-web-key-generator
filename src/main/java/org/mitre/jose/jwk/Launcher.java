@@ -18,6 +18,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.Use;
+import com.nimbusds.jose.jwk.ECKey.Curve;
 
 /**
  * Hello world!
@@ -31,12 +32,13 @@ public class Launcher {
     	
     	options = new Options();
     	
-    	options.addOption("t", true, "Key Type, one of: " + KeyType.RSA + ", " + KeyType.OCT);
-    	options.addOption("s", true, "Key Size in bits, must be an integer, generally divisible by 8");
-    	options.addOption("u", true, "Usage, one of: enc, sig. Defaults to sig");
-    	options.addOption("a", true, "Algorithm.");
+    	options.addOption("t", true, "Key Type, one of: " + KeyType.RSA + ", " + KeyType.OCT + ", " + KeyType.EC);
+    	options.addOption("s", true, "Key Size in bits, required for RSA and OCT key types. Must be an integer divisible by 8");
+    	options.addOption("u", true, "Usage, one of: enc, sig (optional)");
+    	options.addOption("a", true, "Algorithm (optional)");
     	options.addOption("i", true, "Key ID (optional)");
     	options.addOption("p", false, "Display public key separately");
+    	options.addOption("c", true, "Key Curve, required for EC key type. Must be one of " + Curve.P_256 + ", " + Curve.P_384 + ", " + Curve.P_521);
 
     	//options.addOption("g", false, "Load GUI");
     	
@@ -49,33 +51,30 @@ public class Launcher {
 	        String use = cmd.getOptionValue("u");
 	        String alg = cmd.getOptionValue("a");
 	        String kid = cmd.getOptionValue("i");
+	        String crv = cmd.getOptionValue("c");
 
 	        // check for required fields
 	        if (kty == null) {
 	        	printUsageAndExit("Key type must be supplied.");
 	        }
-	        if (size == null) {
-	        	printUsageAndExit("Key size must be supplied.");
-	        }
 	        
 	        // parse out the important bits
 	        
-	        // surrounding try/catch catches numberformatexception from this
-	        Integer keySize = Integer.decode(size);
-
         	KeyType keyType = KeyType.parse(kty);
 
         	if (Strings.isNullOrEmpty(kid)) {
         		kid = null;
         	}
         	Use keyUse = null;
-    		if (use == null || use.equals("sig")) {
-    			keyUse = Use.SIGNATURE;
-    		} else if (use.equals("enc")) {
-    			keyUse = Use.ENCRYPTION;
-    		} else {
-    			printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
-    		}
+        	if (use != null) {
+        		if (use.equals("sig")) {
+	    			keyUse = Use.SIGNATURE;
+	    		} else if (use.equals("enc")) {
+	    			keyUse = Use.ENCRYPTION;
+	    		} else {
+	    			printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
+	    		}
+        	}
         	
         	Algorithm keyAlg = null;
         	if (!Strings.isNullOrEmpty(alg)) {
@@ -85,17 +84,28 @@ public class Launcher {
         	JWK jwk = null;
         	
         	if (keyType.equals(KeyType.RSA)) {
+    	        // surrounding try/catch catches numberformatexception from this
+    	        Integer keySize = Integer.decode(size);
         		if (keySize % 8 != 0) {
-        			printUsageAndExit("Key size for RSA must be divisible by 8, got " + keySize);
+        			printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
         		}
+
         		jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.OCT)) {
+    	        // surrounding try/catch catches numberformatexception from this
+    	        Integer keySize = Integer.decode(size);
         		if (keySize % 8 != 0) {
-        			printUsageAndExit("Key size for octet sequence must be divisible by 8, got " + keySize);
+        			printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
         		}
+
         		jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.EC)) {
-        		printUsageAndExit("Elliptical Curve Keys are not yet supported.");
+        		try {
+	                Curve keyCurve = Curve.parse(crv);
+	                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+                } catch (java.text.ParseException e) {
+	                printUsageAndExit("Invalid curve parameter, got: " + crv);
+                }
         	} else {
         		printUsageAndExit("Unknown key type: " + keyType);
         	}
@@ -142,7 +152,7 @@ public class Launcher {
     	}
     	
     	HelpFormatter formatter = new HelpFormatter();
-    	formatter.printHelp( "java -jar json-web-key-generator.jar -t <keyType> -s <keySize> [-u <keyUsage> -a <algorithm> -i <keyId> -p]", options );
+    	formatter.printHelp( "java -jar json-web-key-generator.jar -t <keyType> [options]", options );
     	
     	// kill the program
     	System.exit(1);
