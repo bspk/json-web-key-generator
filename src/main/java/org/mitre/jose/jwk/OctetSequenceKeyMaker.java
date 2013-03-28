@@ -31,8 +31,7 @@ public class OctetSequenceKeyMaker {
     	sr.nextBytes(bytes);
     	
     	// make a key
-    	Base64URL k = Base64URL.encode(bytes);
-    	OctetSequenceKey key = new OctetSequenceKey(k, use, alg, kid);
+    	OctetSequenceKey key = new OctetSequenceKey(bytes, use, alg, kid);
     	
     	return key;
     	
