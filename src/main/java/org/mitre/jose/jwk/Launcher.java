@@ -89,6 +89,10 @@ public class Launcher {
         	
         	if (keyType.equals(KeyType.RSA)) {
     	        // surrounding try/catch catches numberformatexception from this
+        		if (Strings.isNullOrEmpty(size)) {
+        			printUsageAndExit("Key size (in bits) is required for key type " + keyType);
+        		}
+        		
     	        Integer keySize = Integer.decode(size);
         		if (keySize % 8 != 0) {
         			printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
@@ -97,6 +101,9 @@ public class Launcher {
         		jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.OCT)) {
     	        // surrounding try/catch catches numberformatexception from this
+        		if (Strings.isNullOrEmpty(size)) {
+        			printUsageAndExit("Key size (in bits) is required for key type " + keyType);
+        		}
     	        Integer keySize = Integer.decode(size);
         		if (keySize % 8 != 0) {
         			printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
@@ -105,6 +112,9 @@ public class Launcher {
         		jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.EC)) {
         		try {
+            		if (Strings.isNullOrEmpty(crv)) {
+            			printUsageAndExit("Curve is required for key type " + keyType);
+            		}
 	                Curve keyCurve = Curve.parse(crv);
 	                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
                 } catch (java.text.ParseException e) {
