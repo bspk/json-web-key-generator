@@ -15,6 +15,7 @@ import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.Use;
@@ -39,6 +40,7 @@ public class Launcher {
     	options.addOption("i", true, "Key ID (optional)");
     	options.addOption("p", false, "Display public key separately");
     	options.addOption("c", true, "Key Curve, required for EC key type. Must be one of " + Curve.P_256 + ", " + Curve.P_384 + ", " + Curve.P_521);
+    	options.addOption("S", false, "Wrap the generated key in a KeySet");
 
     	//options.addOption("g", false, "Load GUI");
     	
@@ -52,6 +54,8 @@ public class Launcher {
 	        String alg = cmd.getOptionValue("a");
 	        String kid = cmd.getOptionValue("i");
 	        String crv = cmd.getOptionValue("c");
+	        boolean keySet = cmd.hasOption("S");
+	        boolean pubKey = cmd.hasOption("p");
 
 	        // check for required fields
 	        if (kty == null) {
@@ -117,10 +121,16 @@ public class Launcher {
         	// round trip it through GSON to get a prettyprinter
         	Gson gson = new GsonBuilder().setPrettyPrinting().create();
         	
-        	JsonElement json = new JsonParser().parse(jwk.toJSONString());        	
-        	System.out.println(gson.toJson(json));
+        	if (keySet) {
+        		JWKSet jwkSet = new JWKSet(jwk);
+        		JsonElement json = new JsonParser().parse(jwkSet.toJSONObject(false).toJSONString());        	
+        		System.out.println(gson.toJson(json));
+        	} else {
+        		JsonElement json = new JsonParser().parse(jwk.toJSONString());        	
+        		System.out.println(gson.toJson(json));
+        	}
         	
-        	if (cmd.hasOption("p")) {
+			if (pubKey) {
         		System.out.println(); // spacer
         		
         		// also print public key, if possible
@@ -128,8 +138,14 @@ public class Launcher {
         		
         		if (pub != null) {
             		System.out.println("Public key:");
-	        		JsonElement pubJson = new JsonParser().parse(pub.toJSONString());
-	        		System.out.println(gson.toJson(pubJson));
+                	if (keySet) {
+                		JWKSet jwkSet = new JWKSet(pub);
+                		JsonElement json = new JsonParser().parse(jwkSet.toJSONObject(false).toJSONString());        	
+                		System.out.println(gson.toJson(json));
+                	} else {
+                		JsonElement json = new JsonParser().parse(pub.toJSONString());        	
+                		System.out.println(gson.toJson(json));
+                	}
         		} else {
         			System.out.println("No public key.");
         		}
