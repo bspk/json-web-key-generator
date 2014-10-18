@@ -14,6 +14,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<scm>
+		<connection>scm:git:https://github.com/mitreid-connect/json-web-key-generator.git</connection>
+		<developerConnection>scm:git:git@github.com:mitreid-connect/json-web-key-generator.git</developerConnection>
+		<url>https://github.com/mitreid-connect/json-web-key-generator.git</url>
+		<tag>HEAD</tag>
+	</scm>
+
   <parent>
     <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
