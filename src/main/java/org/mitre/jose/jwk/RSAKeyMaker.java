@@ -10,9 +10,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.Use;
 
 /**
  * @author jricher
@@ -27,7 +26,7 @@ public class RSAKeyMaker {
 	 * @param kid
 	 * @return
 	 */
-    public static RSAKey make(Integer keySize, Use keyUse, Algorithm keyAlg, String kid) {
+    public static RSAKey make(Integer keySize, KeyUse keyUse, Algorithm keyAlg, String kid) {
     	
     	try {
 	        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -37,7 +36,7 @@ public class RSAKeyMaker {
 	        RSAPublicKey pub = (RSAPublicKey) kp.getPublic();
 	        RSAPrivateKey priv = (RSAPrivateKey) kp.getPrivate();
 	        
-	        RSAKey key = new RSAKey(pub, priv, keyUse, keyAlg, kid);
+	        RSAKey key = new RSAKey(pub, priv, keyUse, null, keyAlg, kid, null, null, null);
 	        
 	        return key;
         } catch (NoSuchAlgorithmException e) {

@@ -9,13 +9,12 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.ECKey.Curve;
-import com.nimbusds.jose.jwk.Use;
+import com.nimbusds.jose.jwk.KeyUse;
 
 /**
  * @author jricher
@@ -30,7 +29,7 @@ public class ECKeyMaker {
 	 * @param kid
 	 * @return
 	 */
-    public static ECKey make(Curve crv, Use keyUse, Algorithm keyAlg, String kid) {
+    public static ECKey make(Curve crv, KeyUse keyUse, Algorithm keyAlg, String kid) {
     	
     	try {
 	    	ECParameterSpec ecSpec = crv.toECParameterSpec();
@@ -43,7 +42,7 @@ public class ECKeyMaker {
 	    	ECPublicKey pub = (ECPublicKey) kp.getPublic();
 	    	ECPrivateKey priv = (ECPrivateKey) kp.getPrivate();
 	
-	    	ECKey key = new ECKey(crv, pub, priv, keyUse, keyAlg, kid);
+	    	ECKey key = new ECKey(crv, pub, priv, keyUse, null, keyAlg, kid, null, null, null);
 	    	
 	    	return key;
 	    	

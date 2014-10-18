@@ -14,12 +14,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.ECKey.Curve;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.Use;
-import com.nimbusds.jose.jwk.ECKey.Curve;
+import com.nimbusds.jose.jwk.KeyUse;
 
 /**
  * Hello world!
@@ -69,12 +68,12 @@ public class Launcher {
         	if (Strings.isNullOrEmpty(kid)) {
         		kid = null;
         	}
-        	Use keyUse = null;
+        	KeyUse keyUse = null;
         	if (use != null) {
         		if (use.equals("sig")) {
-	    			keyUse = Use.SIGNATURE;
+	    			keyUse = KeyUse.SIGNATURE;
 	    		} else if (use.equals("enc")) {
-	    			keyUse = Use.ENCRYPTION;
+	    			keyUse = KeyUse.ENCRYPTION;
 	    		} else {
 	    			printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
 	    		}
@@ -111,15 +110,11 @@ public class Launcher {
 
         		jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
         	} else if (keyType.equals(KeyType.EC)) {
-        		try {
-            		if (Strings.isNullOrEmpty(crv)) {
-            			printUsageAndExit("Curve is required for key type " + keyType);
-            		}
-	                Curve keyCurve = Curve.parse(crv);
-	                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
-                } catch (java.text.ParseException e) {
-	                printUsageAndExit("Invalid curve parameter, got: " + crv);
-                }
+        		if (Strings.isNullOrEmpty(crv)) {
+					printUsageAndExit("Curve is required for key type " + keyType);
+				}
+				Curve keyCurve = Curve.parse(crv);
+				jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
         	} else {
         		printUsageAndExit("Unknown key type: " + keyType);
         	}

@@ -6,9 +6,8 @@ package org.mitre.jose.jwk;
 import java.security.SecureRandom;
 
 import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.Use;
 import com.nimbusds.jose.util.Base64URL;
 
 /**
@@ -21,7 +20,7 @@ public class OctetSequenceKeyMaker {
 	 * @param keySize in bits
 	 * @return
 	 */
-    public static OctetSequenceKey make(Integer keySize, Use use, Algorithm alg, String kid) {
+    public static OctetSequenceKey make(Integer keySize, KeyUse use, Algorithm alg, String kid) {
     	
     	// holder for the random bytes
     	byte[] bytes = new byte[keySize / 8];
@@ -30,8 +29,10 @@ public class OctetSequenceKeyMaker {
     	SecureRandom sr = new SecureRandom();
     	sr.nextBytes(bytes);
     	
+    	Base64URL encoded = Base64URL.encode(bytes);
+    	
     	// make a key
-    	OctetSequenceKey key = new OctetSequenceKey(bytes, use, alg, kid);
+    	OctetSequenceKey key = new OctetSequenceKey(encoded, use, null, alg, kid, null, null, null);
     	
     	return key;
     	
