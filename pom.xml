@@ -3,7 +3,7 @@
 
 	<groupId>org.mitre</groupId>
 	<artifactId>json-web-key-generator</artifactId>
-	<version>0.2-SNAPSHOT</version>
+	<version>0.2</version>
 	<packaging>jar</packaging>
 
 	<name>json-web-key-generator</name>
@@ -12,6 +12,29 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
+        <profiles>
+                <profile>
+                        <!-- Turn off strict javadoc when building on 1.8 -->
+                        <activation>
+                                <jdk>1.8</jdk>
+                        </activation>
+                        <build>
+                                <pluginManagement>
+                                        <plugins>
+                                                <plugin>
+                                                        <groupId>org.apache.maven.plugins</groupId>
+                                                        <artifactId>maven-javadoc-plugin</artifactId>
+                                                        <version>2.9</version>
+                                                        <configuration>
+                                                                <additionalparam>-Xdoclint:none</additionalparam>
+                                                        </configuration>
+                                                </plugin>
+                                        </plugins>
+                                </pluginManagement>
+                        </build>
+                </profile>
+        </profiles>
 
 	<scm>
 		<connection>scm:git:https://github.com/mitreid-connect/json-web-key-generator.git</connection>
