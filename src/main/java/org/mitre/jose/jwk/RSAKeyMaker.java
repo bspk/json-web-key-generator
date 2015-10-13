@@ -37,11 +37,11 @@ public class RSAKeyMaker {
 	        RSAPrivateKey priv = (RSAPrivateKey) kp.getPrivate();
 
 			RSAKey rsaKey = new RSAKey.Builder(pub)
-									.privateKey(priv)
-									.keyUse(keyUse)
-									.algorithm(keyAlg)
-									.keyID(kid)
-									.build();
+						.privateKey(priv)
+						.keyUse(keyUse)
+						.algorithm(keyAlg)
+						.keyID(kid)
+						.build();
 
 			return rsaKey;
         } catch (NoSuchAlgorithmException e) {
