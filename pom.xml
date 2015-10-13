@@ -3,7 +3,7 @@
 
 	<groupId>org.mitre</groupId>
 	<artifactId>json-web-key-generator</artifactId>
-	<version>0.3-SNAPSHOT</version>
+	<version>0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>json-web-key-generator</name>
@@ -77,7 +77,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.0</version>
+			<version>4.2</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>
