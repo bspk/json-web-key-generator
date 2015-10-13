@@ -35,17 +35,19 @@ public class RSAKeyMaker {
 	        
 	        RSAPublicKey pub = (RSAPublicKey) kp.getPublic();
 	        RSAPrivateKey priv = (RSAPrivateKey) kp.getPrivate();
-	        
-	        RSAKey key = new RSAKey(pub, priv, keyUse, null, keyAlg, kid, null, null, null);
-	        
-	        return key;
+
+			RSAKey rsaKey = new RSAKey.Builder(pub)
+						.privateKey(priv)
+						.keyUse(keyUse)
+						.algorithm(keyAlg)
+						.keyID(kid)
+						.build();
+
+			return rsaKey;
         } catch (NoSuchAlgorithmException e) {
 	        // TODO Auto-generated catch block
 	        e.printStackTrace();
 	        return null;
         }
-    	
-    	
     }
-
 }

@@ -41,11 +41,15 @@ public class ECKeyMaker {
 	    	
 	    	ECPublicKey pub = (ECPublicKey) kp.getPublic();
 	    	ECPrivateKey priv = (ECPrivateKey) kp.getPrivate();
-	
-	    	ECKey key = new ECKey(crv, pub, priv, keyUse, null, keyAlg, kid, null, null, null);
-	    	
-	    	return key;
-	    	
+
+			ECKey ecKey = new ECKey.Builder(crv, pub)
+					.privateKey(priv)
+					.keyID(kid)
+					.algorithm(keyAlg)
+					.keyUse(keyUse)
+					.build();
+
+			return ecKey;
     	} catch (InvalidAlgorithmParameterException e) {
     		e.printStackTrace();
     		return null;
