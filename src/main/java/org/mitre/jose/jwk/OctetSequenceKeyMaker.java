@@ -33,10 +33,10 @@ public class OctetSequenceKeyMaker {
     	
     	// make a key
 		OctetSequenceKey octetSequenceKey = new OctetSequenceKey.Builder(encoded)
-				.keyID(kid)
-				.algorithm(alg)
-				.keyUse(use)
-				.build();
+									.keyID(kid)
+									.algorithm(alg)
+									.keyUse(use)
+									.build();
 
 		return octetSequenceKey;
     }
