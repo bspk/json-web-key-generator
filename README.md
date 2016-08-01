@@ -5,9 +5,9 @@ A commandline Java-based generator for JSON Web Keys (JWK) and JSON Private/Shar
 
 =====================
 
-To compile, run `mvn package`. This will generate a json-web-key-generator-0.3-SNAPSHOT-jar-with-dependencies.jar in the /target directory.
+To compile, run `mvn package`. This will generate a json-web-key-generator-0.4-SNAPSHOT-jar-with-dependencies.jar in the /target directory.
 
-To generate a key, run `java -jar json-web-key-generator-0.3-SNAPSHOT-jar-with-dependencies.jar -t <keytype>`. Several other arguments are defined which may be required depending on your key type:
+To generate a key, run `java -jar json-web-key-generator-0.4-SNAPSHOT-jar-with-dependencies.jar -t <keytype>`. Several other arguments are defined which may be required depending on your key type:
 
 ```
  -a <arg>   Algorithm (optional)
