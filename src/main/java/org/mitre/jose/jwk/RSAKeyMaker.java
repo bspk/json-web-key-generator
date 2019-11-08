@@ -6,7 +6,7 @@ package org.mitre.jose.jwk;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 
 import com.nimbusds.jose.Algorithm;
@@ -33,7 +33,7 @@ public class RSAKeyMaker {
             KeyPair kp = generator.generateKeyPair();
 
             RSAPublicKey pub = (RSAPublicKey) kp.getPublic();
-            RSAPrivateKey priv = (RSAPrivateKey) kp.getPrivate();
+            RSAPrivateCrtKey priv = (RSAPrivateCrtKey) kp.getPrivate();
 
             RSAKey rsaKey = new RSAKey.Builder(pub)
                     .privateKey(priv)
