@@ -12,8 +12,8 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 
 import com.nimbusds.jose.Algorithm;
+import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.ECKey.Curve;
 import com.nimbusds.jose.jwk.KeyUse;
 
 /**

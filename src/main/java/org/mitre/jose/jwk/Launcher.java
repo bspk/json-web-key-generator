@@ -1,9 +1,11 @@
 package org.mitre.jose.jwk;
 
+
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +16,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
@@ -23,7 +24,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.ECKey.Curve;
+import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
@@ -187,12 +188,12 @@ public class Launcher {
         } else {
             json = new JsonParser().parse(jwk.toJSONString());
         }
-        OutputStream os = null;
+        Writer os = null;
         try {
-            os = new FileOutputStream(output);
-            IOUtils.write(gson.toJson(json), os);
+            os = new BufferedWriter(new FileWriter(output));
+            os.write(gson.toJson(json));
         } finally {
-            IOUtils.closeQuietly(os);
+            os.close();
         }
     }
 
