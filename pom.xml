@@ -3,7 +3,7 @@
 
     <groupId>org.mitre</groupId>
     <artifactId>json-web-key-generator</artifactId>
-    <version>0.4-SNAPSHOT</version>
+    <version>0.4</version>
     <packaging>jar</packaging>
 
     <name>json-web-key-generator</name>
