@@ -13,29 +13,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <profiles>
-        <profile>
-            <!-- Turn off strict javadoc when building on 1.8 -->
-            <activation>
-                <jdk>1.8</jdk>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-javadoc-plugin</artifactId>
-                            <version>2.9</version>
-                            <configuration>
-                                <additionalparam>-Xdoclint:none</additionalparam>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-    </profiles>
-
     <scm>
         <connection>scm:git:https://github.com/mitreid-connect/json-web-key-generator.git</connection>
         <developerConnection>scm:git:git@github.com:mitreid-connect/json-web-key-generator.git</developerConnection>
@@ -50,13 +27,25 @@
     </parent>
 
     <build>
+		<pluginManagement>
+		    <plugins>
+		        <plugin>
+		            <groupId>org.apache.maven.plugins</groupId>
+		            <artifactId>maven-javadoc-plugin</artifactId>
+		            <version>2.9</version>
+		            <configuration>
+		                <additionalparam>-Xdoclint:none</additionalparam>
+		            </configuration>
+		        </plugin>
+		    </plugins>
+		</pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -100,7 +89,7 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>8.2</version>
+            <version>8.2.1</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -116,6 +105,11 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.3</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.bouncycastle</groupId>
+        	<artifactId>bcprov-jdk15on</artifactId>
+        	<version>1.64</version>
         </dependency>
     </dependencies>
 </project>

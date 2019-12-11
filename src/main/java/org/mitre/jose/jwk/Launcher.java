@@ -6,7 +6,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,6 +18,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
@@ -37,12 +40,20 @@ public class Launcher {
 
     private static Options options;
 
+    private static List<Curve> ecCurves = Arrays.asList(
+    	Curve.P_256, Curve.P_256K, Curve.P_384, Curve.P_521);
+
+    private static List<Curve> okpCurves = Arrays.asList(
+    	Curve.Ed25519, Curve.Ed448, Curve.X25519, Curve.X448);
+
     public static void main(String[] args) {
+
+    	Security.addProvider(new BouncyCastleProvider());
 
         options = new Options();
 
         options.addOption("t", true, "Key Type, one of: " + KeyType.RSA.getValue() + ", " + KeyType.OCT.getValue() + ", " +
-                KeyType.EC.getValue());
+                KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
         options.addOption("s", true, "Key Size in bits, required for RSA and oct key types. Must be an integer divisible by 8");
         options.addOption("u", true, "Usage, one of: enc, sig (optional)");
         options.addOption("a", true, "Algorithm (optional)");
@@ -129,7 +140,23 @@ public class Launcher {
                     printUsageAndExit("Curve is required for key type " + keyType);
                 }
                 Curve keyCurve = Curve.parse(crv);
+
+                if (!ecCurves.contains(keyCurve)) {
+                	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+                }
+
                 jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+            } else if (keyType.equals(KeyType.OKP)) {
+                if (Strings.isNullOrEmpty(crv)) {
+                    printUsageAndExit("Curve is required for key type " + keyType);
+                }
+                Curve keyCurve = Curve.parse(crv);
+
+                if (!okpCurves.contains(keyCurve)) {
+                	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+                }
+
+                jwk = OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
             } else {
                 printUsageAndExit("Unknown key type: " + keyType);
             }
@@ -181,7 +208,7 @@ public class Launcher {
         File output = new File(outFile);
         if (keySet) {
             List<JWK> existingKeys = output.exists() ? JWKSet.load(output).getKeys() : Collections.<JWK>emptyList();
-            List<JWK> jwkList = new ArrayList<JWK>(existingKeys);
+            List<JWK> jwkList = new ArrayList<>(existingKeys);
             jwkList.add(jwk);
             JWKSet jwkSet = new JWKSet(jwkList);
             json = new JsonParser().parse(jwkSet.toJSONObject(false).toJSONString());
