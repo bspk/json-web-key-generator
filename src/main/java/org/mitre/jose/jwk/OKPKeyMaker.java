@@ -1,8 +1,13 @@
 package org.mitre.jose.jwk;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+
+import org.bouncycastle.asn1.ASN1BitString;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
 
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.Curve;
@@ -43,8 +48,44 @@ public class OKPKeyMaker {
 				return null;
 			}
 
-			OctetKeyPair jwk = new OctetKeyPair.Builder(keyCurve, Base64URL.encode(keyPair.getPublic().getEncoded()))
-				.d(Base64URL.encode(keyPair.getPrivate().getEncoded()))
+			// Java only gives us the keys in ASN.1 format so we need to parse them back out to get the raw numbers
+
+			/*
+			 * Public key is:
+			 *
+			 * SEQUENCE (2 elem)
+			 *   SEQUENCE (1 elem)
+			 *     OBJECT IDENTIFIER
+			 *   BIT STRING (n bit) <-- x value
+			 *
+			 */
+			ASN1Sequence pubPrim = (ASN1Sequence) ASN1Sequence.fromByteArray(keyPair.getPublic().getEncoded());
+			byte[] x = ((ASN1BitString)pubPrim.getObjectAt(1)).getOctets();
+
+
+			/*
+			 * Private key is:
+			 *
+			 * SEQUENCE (4 elem)
+			 *   INTEGER
+			 *   SEQUENCE (1 elem)
+			 *     OBJECT IDENTIFIER
+			 *   OCTET STRING (1 elem)
+			 *     OCTET STRING (n byte) <-- d value
+			 *   OCTET STRING (n byte) <-- (x value)
+			 *
+			 */
+			ASN1Sequence privPrim = (ASN1Sequence) ASN1Sequence.fromByteArray(keyPair.getPrivate().getEncoded());
+			byte[] d = ((ASN1OctetString)privPrim.getObjectAt(2)).getOctets();
+
+			// For some reason, the Ed* keys are double-wrapped at this level, but the X* keys are not
+			if (keyCurve.equals(Curve.Ed25519) || keyCurve.equals(Curve.Ed448)) {
+				d = ((ASN1OctetString)ASN1OctetString.fromByteArray(d)).getOctets();
+			}
+
+			// Now that we have the raw numbers, export them as a JWK
+			OctetKeyPair jwk = new OctetKeyPair.Builder(keyCurve, Base64URL.encode(x))
+				.d(Base64URL.encode(d))
 				.keyUse(keyUse)
 				.algorithm(keyAlg)
 				.keyID(kid)
@@ -52,7 +93,7 @@ public class OKPKeyMaker {
 
 			return jwk;
 
-		} catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
