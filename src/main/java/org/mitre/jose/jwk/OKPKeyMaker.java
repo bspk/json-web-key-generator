@@ -78,8 +78,9 @@ public class OKPKeyMaker {
 			ASN1Sequence privPrim = (ASN1Sequence) ASN1Sequence.fromByteArray(keyPair.getPrivate().getEncoded());
 			byte[] d = ((ASN1OctetString)privPrim.getObjectAt(2)).getOctets();
 
-			// For some reason, the Ed* keys are double-wrapped at this level, but the X* keys are not
-			if (keyCurve.equals(Curve.Ed25519) || keyCurve.equals(Curve.Ed448)) {
+			// Both the public and private keys should be the same length.
+			// For some reason, sometimes the private key is double-wrapped in OctetStrings and we need to unpack that.
+			if (x.length < d.length) {
 				d = ((ASN1OctetString)ASN1OctetString.fromByteArray(d)).getOctets();
 			}
 
