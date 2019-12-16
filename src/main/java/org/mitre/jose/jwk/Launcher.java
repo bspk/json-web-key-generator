@@ -15,12 +15,15 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -41,7 +44,7 @@ public class Launcher {
     private static Options options;
 
     private static List<Curve> ecCurves = Arrays.asList(
-    	Curve.P_256, Curve.P_256K, Curve.P_384, Curve.P_521);
+    	Curve.P_256, Curve.SECP256K1, Curve.P_384, Curve.P_521);
 
     private static List<Curve> okpCurves = Arrays.asList(
     	Curve.Ed25519, Curve.Ed448, Curve.X25519, Curve.X448);
@@ -60,11 +63,10 @@ public class Launcher {
         options.addOption("i", true, "Key ID (optional), one will be generated if not defined");
         options.addOption("I", false, "Don't generate a Key ID if none defined");
         options.addOption("p", false, "Display public key separately");
-        options.addOption("c", true, "Key Curve, required for EC key type. Must be one of " + Curve.P_256 + ", " + Curve.P_384
-				+ ", " + Curve.P_521);
+        options.addOption("c", true, "Key Curve, required for EC or OKP key type. Must be one of " + Joiner.on(", ").join(ecCurves)
+        	+ " for EC keys or one of " + Joiner.on(", ").join(okpCurves) + " for OKP keys.");
         options.addOption("S", false, "Wrap the generated key in a KeySet");
-        options.addOption("o", true, "Write output to file (will append to existing KeySet if -S is used), No Display of Key "
-				+ "Material");
+        options.addOption("o", true, "Write output to file (will append to existing KeySet if -S is used), No Display of Key Material");
 
         CommandLineParser parser = new PosixParser();
         try {
@@ -241,7 +243,10 @@ public class Launcher {
             System.err.println(message);
         }
 
+        List<String> optionOrder = ImmutableList.of("t", "s", "c", "u", "a", "i", "I", "p", "S", "o");
+
         HelpFormatter formatter = new HelpFormatter();
+        formatter.setOptionComparator((o1, o2) -> optionOrder.indexOf(((Option)o1).getOpt()) - optionOrder.indexOf(((Option)o2).getOpt()));
         formatter.printHelp("java -jar json-web-key-generator.jar -t <keyType> [options]", options);
 
         // kill the program
