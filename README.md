@@ -1,4 +1,4 @@
-# json-web-key-generator
+# json-web-key-generator [![Docker Pulls](https://img.shields.io/docker/pulls/legion2/json-web-key-generator)](https://hub.docker.com/r/legion2/json-web-key-generator)
 A command-line Java-based generator for JSON Web Keys (JWK) and JSON Private/Shared Keys (JPSKs).
 
 ## Getting Started
