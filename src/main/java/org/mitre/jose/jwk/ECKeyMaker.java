@@ -28,7 +28,7 @@ public class ECKeyMaker {
      * @param kid
      * @return
      */
-    public static ECKey make(Curve crv, KeyUse keyUse, Algorithm keyAlg, String kid) {
+    public static ECKey make(Curve crv, KeyUse keyUse, Algorithm keyAlg, KeyIdGenerator keyIdGenerator) {
 
         try {
             ECParameterSpec ecSpec = crv.toECParameterSpec();
@@ -43,7 +43,7 @@ public class ECKeyMaker {
 
             ECKey ecKey = new ECKey.Builder(crv, pub)
                     .privateKey(priv)
-                    .keyID(kid)
+                    .keyID(keyIdGenerator.generate(keyUse, kp.getPublic().getEncoded()))
                     .algorithm(keyAlg)
                     .keyUse(keyUse)
                     .build();

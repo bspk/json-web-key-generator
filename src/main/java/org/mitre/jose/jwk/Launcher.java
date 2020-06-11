@@ -62,6 +62,7 @@ public class Launcher {
         options.addOption("a", true, "Algorithm (optional)");
         options.addOption("i", true, "Key ID (optional), one will be generated if not defined");
         options.addOption("I", false, "Don't generate a Key ID if none defined");
+        options.addOption("T", true,  "Key ID Type for generated kid claim, one of: " + KeyIdType.UsageTimestamp + ", " + KeyIdType.Sha1PubKey + " or " + KeyIdType.None);
         options.addOption("p", false, "Display public key separately");
         options.addOption("c", true, "Key Curve, required for EC or OKP key type. Must be one of " + Joiner.on(", ").join(ecCurves)
         	+ " for EC keys or one of " + Joiner.on(", ").join(okpCurves) + " for OKP keys.");
@@ -82,7 +83,8 @@ public class Launcher {
             boolean pubKey = cmd.hasOption("p");
             boolean doNotGenerateKid = cmd.hasOption("I");
             String outFile = cmd.getOptionValue("o");
-
+            KeyIdGenerator keyIdGenerator = getKeyIdGenerator(cmd.getOptionValue("T"), doNotGenerateKid, kid);
+            
             // check for required fields
             if (kty == null) {
                 printUsageAndExit("Key type must be supplied.");
@@ -103,10 +105,6 @@ public class Launcher {
                 }
             }
 
-            if (Strings.isNullOrEmpty(kid)) {
-                kid = doNotGenerateKid ? null : generateKid(keyUse);
-            }
-
             Algorithm keyAlg = null;
             if (!Strings.isNullOrEmpty(alg)) {
                 keyAlg = JWSAlgorithm.parse(alg);
@@ -125,7 +123,7 @@ public class Launcher {
                     printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
                 }
 
-                jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
+                jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, keyIdGenerator);
             } else if (keyType.equals(KeyType.OCT)) {
                 // surrounding try/catch catches numberformatexception from this
                 if (Strings.isNullOrEmpty(size)) {
@@ -136,7 +134,7 @@ public class Launcher {
                     printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
                 }
 
-                jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
+                jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, keyIdGenerator);
             } else if (keyType.equals(KeyType.EC)) {
                 if (Strings.isNullOrEmpty(crv)) {
                     printUsageAndExit("Curve is required for key type " + keyType);
@@ -147,7 +145,7 @@ public class Launcher {
                 	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
                 }
 
-                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, keyIdGenerator);
             } else if (keyType.equals(KeyType.OKP)) {
                 if (Strings.isNullOrEmpty(crv)) {
                     printUsageAndExit("Curve is required for key type " + keyType);
@@ -158,7 +156,7 @@ public class Launcher {
                 	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
                 }
 
-                jwk = OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+                jwk = OKPKeyMaker.make(keyCurve, keyUse, keyAlg, keyIdGenerator);
             } else {
                 printUsageAndExit("Unknown key type: " + keyType);
             }
@@ -199,9 +197,36 @@ public class Launcher {
         }
     }
 
-    private static String generateKid(KeyUse keyUse) {
-        String prefix = keyUse == null ? "" : keyUse.identifier();
-        return prefix + (System.currentTimeMillis() / 1000);
+    private static KeyIdGenerator getKeyIdGenerator(String optionValue, boolean doNotGenerateKid, final String kid) {
+      int i = 0;
+      
+      if(optionValue != null)
+        i++;
+      
+      if(doNotGenerateKid)
+        i++;
+      
+      if(kid != null)
+        i++;
+      
+      if(i>1)
+        printUsageAndExit("Only one of -I -i and -T may be specified.");
+      
+      if(kid != null) {
+        return (keyUse, pubKey) -> kid;
+      }
+      
+      if(doNotGenerateKid)
+        return KeyIdType.None;
+      
+      try
+      {
+        return KeyIdType.valueOf(optionValue);
+      }
+      catch(NullPointerException | IllegalArgumentException e)
+      {
+        return KeyIdType.UsageTimestamp;
+      }
     }
 
     private static void writeKeyToFile(boolean keySet, String outFile, JWK jwk, Gson gson) throws IOException,
