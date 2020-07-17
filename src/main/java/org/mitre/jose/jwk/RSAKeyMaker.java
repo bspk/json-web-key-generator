@@ -25,7 +25,7 @@ public class RSAKeyMaker {
      * @param kid
      * @return
      */
-    public static RSAKey make(Integer keySize, KeyUse keyUse, Algorithm keyAlg, String kid) {
+    public static RSAKey make(Integer keySize, KeyUse keyUse, Algorithm keyAlg, KeyIdGenerator kid) {
 
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -39,7 +39,7 @@ public class RSAKeyMaker {
                     .privateKey(priv)
                     .keyUse(keyUse)
                     .algorithm(keyAlg)
-                    .keyID(kid)
+                    .keyID(kid.generate(keyUse, pub.getEncoded()))
                     .build();
 
             return rsaKey;

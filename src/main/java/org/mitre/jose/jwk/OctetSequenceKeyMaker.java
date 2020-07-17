@@ -19,7 +19,7 @@ public class OctetSequenceKeyMaker {
      * @param keySize in bits
      * @return
      */
-    public static OctetSequenceKey make(Integer keySize, KeyUse use, Algorithm alg, String kid) {
+    public static OctetSequenceKey make(Integer keySize, KeyUse use, Algorithm alg, KeyIdGenerator kid) {
 
         // holder for the random bytes
         byte[] bytes = new byte[keySize / 8];
@@ -32,7 +32,7 @@ public class OctetSequenceKeyMaker {
 
         // make a key
         OctetSequenceKey octetSequenceKey = new OctetSequenceKey.Builder(encoded)
-                .keyID(kid)
+                .keyID(kid.generate(use, bytes))
                 .algorithm(alg)
                 .keyUse(use)
                 .build();

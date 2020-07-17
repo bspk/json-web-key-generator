@@ -12,17 +12,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
@@ -50,6 +51,9 @@ public class Launcher {
     private static List<Curve> okpCurves = Arrays.asList(
         Curve.Ed25519, Curve.Ed448, Curve.X25519, Curve.X448);
 
+    private static List<KeyType> keyTypes = Arrays.asList(
+    	KeyType.RSA, KeyType.OCT, KeyType.EC, KeyType.OKP);
+
     public static void main(String[] args) {
 
         Security.addProvider(new BouncyCastleProvider());
@@ -66,13 +70,29 @@ public class Launcher {
             String size = cmd.getOptionValue("s");
             String use = cmd.getOptionValue("u");
             String alg = cmd.getOptionValue("a");
-            String kid = cmd.getOptionValue("i");
             String crv = cmd.getOptionValue("c");
             boolean keySet = cmd.hasOption("S");
             boolean pubKey = cmd.hasOption("p");
-            boolean doNotGenerateKid = cmd.hasOption("I");
             String outFile = cmd.getOptionValue("o");
             String pubOutFile = cmd.getOptionValue("P");
+
+
+            // process the Key ID
+            String kid = cmd.getOptionValue("i");
+            KeyIdGenerator generator;
+            if (Strings.isNullOrEmpty(kid)) {
+            	// no explicit key ID is specified, see if we should use a generator
+            	if (cmd.hasOption("i") || cmd.hasOption("I")) {
+            		// Either -I is set, -i is set (but an empty value is passed), either way it's a blank key ID
+            		generator = KeyIdGenerator.NONE;
+            	} else {
+            		generator = KeyIdGenerator.get(cmd.getOptionValue("g"));
+            	}
+            } else {
+            	generator = new KeyIdGenerator(null, (u, p) -> kid);
+            }
+
+            System.err.println("Generator: " + generator.getName());
 
             // check for required fields
             if (kty == null) {
@@ -85,16 +105,12 @@ public class Launcher {
 
             KeyUse keyUse = validateKeyUse(use);
 
-            if (Strings.isNullOrEmpty(kid)) {
-                kid = doNotGenerateKid ? null : generateKid(keyUse);
-            }
-
             Algorithm keyAlg = null;
             if (!Strings.isNullOrEmpty(alg)) {
                 keyAlg = JWSAlgorithm.parse(alg);
             }
 
-            JWK jwk = makeKey(size, kid, crv, keyType, keyUse, keyAlg);
+            JWK jwk = makeKey(size, generator, crv, keyType, keyUse, keyAlg);
 
             outputKey(keySet, pubKey, outFile, pubOutFile, jwk);
         } catch (NumberFormatException e) {
@@ -109,48 +125,52 @@ public class Launcher {
     }
 
     private static void configureCommandLineOptions(Options options) {
-        options.addOption("t", "type", true, "Key Type, one of: " + KeyType.RSA.getValue() + ", " + KeyType.OCT.getValue() + ", " +
-            KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
+        options.addOption("t", "type", true, "Key Type, one of: " +
+        	keyTypes.stream()
+        		.map(KeyType::getValue)
+        		.collect(Collectors.joining(", ")));
         options.addOption("s", "size", true,
             "Key Size in bits, required for RSA and oct key types. Must be an integer divisible by 8");
         options.addOption("u", "usage", true, "Usage, one of: enc, sig (optional)");
         options.addOption("a", "algorithm", true, "Algorithm (optional)");
-        options.addOption("i", "id", true, "Key ID (optional), one will be generated if not defined");
-        options.addOption("I", "noGenerateId", false, "Don't generate a Key ID if none defined");
-        options.addOption("p", "showPubKey", false, "Display public key separately");
-        options.addOption("P", "pubKeyOutput", true, "Write public key to file (will append to existing KeySet if -S is used), "
-            + "No Display of Key Material, Requires the usage of -o as well.");
+
+        OptionGroup idGroup = new OptionGroup();
+        idGroup.addOption(new Option("i", "id", true, "Key ID (optional), one will be generated if not defined"));
+        idGroup.addOption(new Option("I", "noGenerateId", false, "<deprecated> Don't generate a Key ID. (Deprecated, use '-g none' instead.)"));
+        idGroup.addOption(new Option("g", "idGenerator", true, "Key ID generation method (optional). Can be one of: "
+        		+ KeyIdGenerator.values().stream()
+        		.map(KeyIdGenerator::getName)
+        		.collect(Collectors.joining(", "))
+        		+ ". If omitted, generator method defaults to 'date'."));
+        options.addOptionGroup(idGroup);
+
+        options.addOption("p", "showPubKey", false, "Display public key separately (if applicable)");
         options.addOption("c", "curve", true,
             "Key Curve, required for EC or OKP key type. Must be one of "
-                + Joiner.on(", ").join(ecCurves)
+                + ecCurves.stream()
+                	.map(Curve::getName)
+                	.collect(Collectors.joining(", "))
                 + " for EC keys or one of "
-                + Joiner.on(", ").join(okpCurves)
+                + okpCurves.stream()
+            		.map(Curve::getName)
+            		.collect(Collectors.joining(", "))
                 + " for OKP keys.");
         options.addOption("S", "useKeySet", false, "Wrap the generated key in a KeySet");
-        options.addOption("o", "output", true, "Write output to file (will append to existing KeySet if -S is used), "
-            + "No Display of Key Material");
-    }
-
-
-    private static String generateKid(KeyUse keyUse) {
-        String prefix = keyUse == null ? "" : keyUse.identifier();
-        return prefix + (System.currentTimeMillis() / 1000);
+        options.addOption("o", "output", true, "Write output to file. Will append to existing KeySet if -S is used. "
+            + "Key material will not be displayed to console.");
+        options.addOption("P", "pubKeyOutput", true, "Write public key to separate file. Will append to existing KeySet if -S is used. "
+            + "Key material will not be displayed to console. '-o/--output' must be declared as well.");
     }
 
     private static KeyUse validateKeyUse(String use) {
-        if (use == null) {
-            return null;
-        }
-        if (use.equals("sig")) {
-            return KeyUse.SIGNATURE;
-        } else if (use.equals("enc")) {
-            return KeyUse.ENCRYPTION;
-        } else {
+    	try {
+			return KeyUse.parse(use);
+		} catch (java.text.ParseException e) {
             throw printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
-        }
+		}
     }
 
-    private static JWK makeKey(String size, String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+    private static JWK makeKey(String size, KeyIdGenerator kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
         JWK jwk;
         if (keyType.equals(KeyType.RSA)) {
             jwk = makeRsaKey(kid, size, keyType, keyUse, keyAlg);
@@ -166,7 +186,7 @@ public class Launcher {
         return jwk;
     }
 
-    private static JWK makeOkpKey(String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+    private static JWK makeOkpKey(KeyIdGenerator kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
         if (Strings.isNullOrEmpty(crv)) {
             throw printUsageAndExit("Curve is required for key type " + keyType);
         }
@@ -179,7 +199,7 @@ public class Launcher {
         return OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
     }
 
-    private static JWK makeEcKey(String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+    private static JWK makeEcKey(KeyIdGenerator kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
         if (Strings.isNullOrEmpty(crv)) {
             throw printUsageAndExit("Curve is required for key type " + keyType);
         }
@@ -192,7 +212,7 @@ public class Launcher {
         return ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
     }
 
-    private static JWK makeOctKey(String kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+    private static JWK makeOctKey(KeyIdGenerator kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
         if (Strings.isNullOrEmpty(size)) {
             throw printUsageAndExit("Key size (in bits) is required for key type " + keyType);
         }
@@ -206,7 +226,7 @@ public class Launcher {
         return OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
     }
 
-    private static JWK makeRsaKey(String kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+    private static JWK makeRsaKey(KeyIdGenerator kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
         if (Strings.isNullOrEmpty(size)) {
             throw printUsageAndExit("Key size (in bits) is required for key type " + keyType);
         }
@@ -292,10 +312,10 @@ public class Launcher {
             System.err.println(message);
         }
 
-        List<String> optionOrder = ImmutableList.of("t", "s", "c", "u", "a", "i", "I", "p", "P", "S", "o");
+        List<String> optionOrder = ImmutableList.of("t", "s", "c", "u", "a", "i", "g", "I", "p", "P", "S", "o");
 
         HelpFormatter formatter = new HelpFormatter();
-        formatter.setOptionComparator(Comparator.comparingInt(o -> optionOrder.indexOf(((Option) o).getOpt())));
+        formatter.setOptionComparator(Comparator.comparingInt(o -> optionOrder.indexOf(o.getOpt())));
         formatter.printHelp("java -jar json-web-key-generator.jar -t <keyType> [options]", options);
 
         // kill the program

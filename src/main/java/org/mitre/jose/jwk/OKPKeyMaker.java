@@ -29,7 +29,7 @@ public class OKPKeyMaker {
 	 * @param kid
 	 * @return
 	 */
-	public static JWK make(Curve keyCurve, KeyUse keyUse, Algorithm keyAlg, String kid) {
+	public static JWK make(Curve keyCurve, KeyUse keyUse, Algorithm keyAlg, KeyIdGenerator kid) {
 
 		try {
 
@@ -89,7 +89,7 @@ public class OKPKeyMaker {
 				.d(Base64URL.encode(d))
 				.keyUse(keyUse)
 				.algorithm(keyAlg)
-				.keyID(kid)
+				.keyID(kid.generate(keyUse, x))
 				.build();
 
 			return jwk;
