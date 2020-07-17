@@ -56,25 +56,7 @@ public class Launcher {
 
         options = new Options();
 
-        options.addOption("t", true, "Key Type, one of: " + KeyType.RSA.getValue() + ", " + KeyType.OCT.getValue() + ", " +
-            KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
-        options.addOption("s", true, "Key Size in bits, required for RSA and oct key types. Must be an integer divisible by 8");
-        options.addOption("u", true, "Usage, one of: enc, sig (optional)");
-        options.addOption("a", true, "Algorithm (optional)");
-        options.addOption("i", true, "Key ID (optional), one will be generated if not defined");
-        options.addOption("I", false, "Don't generate a Key ID if none defined");
-        options.addOption("p", false, "Display public key separately");
-        options.addOption("P", true, "Write public key to file (will append to existing KeySet if -S is used), "
-            + "No Display of Key Material, Requires the usage of -o as well.");
-        options.addOption("c", true,
-            "Key Curve, required for EC or OKP key type. Must be one of "
-                + Joiner.on(", ").join(ecCurves)
-                + " for EC keys or one of "
-                + Joiner.on(", ").join(okpCurves)
-                + " for OKP keys.");
-        options.addOption("S", false, "Wrap the generated key in a KeySet");
-        options.addOption("o", true, "Write output to file (will append to existing KeySet if -S is used), "
-            + "No Display of Key Material");
+        configureCommandLineOptions(options);
 
         CommandLineParser parser = new PosixParser();
         try {
@@ -94,23 +76,14 @@ public class Launcher {
 
             // check for required fields
             if (kty == null) {
-                printUsageAndExit("Key type must be supplied.");
+                throw printUsageAndExit("Key type must be supplied.");
             }
 
             // parse out the important bits
 
             KeyType keyType = KeyType.parse(kty);
 
-            KeyUse keyUse = null;
-            if (use != null) {
-                if (use.equals("sig")) {
-                    keyUse = KeyUse.SIGNATURE;
-                } else if (use.equals("enc")) {
-                    keyUse = KeyUse.ENCRYPTION;
-                } else {
-                    printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
-                }
-            }
+            KeyUse keyUse = validateKeyUse(use);
 
             if (Strings.isNullOrEmpty(kid)) {
                 kid = doNotGenerateKid ? null : generateKid(keyUse);
@@ -121,99 +94,161 @@ public class Launcher {
                 keyAlg = JWSAlgorithm.parse(alg);
             }
 
-            JWK jwk = null;
+            JWK jwk = makeKey(size, kid, crv, keyType, keyUse, keyAlg);
 
-            if (keyType.equals(KeyType.RSA)) {
-                // surrounding try/catch catches numberformatexception from this
-                if (Strings.isNullOrEmpty(size)) {
-                    printUsageAndExit("Key size (in bits) is required for key type " + keyType);
-                }
-
-                Integer keySize = Integer.decode(size);
-                if (keySize % 8 != 0) {
-                    printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
-                }
-
-                jwk = RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
-            } else if (keyType.equals(KeyType.OCT)) {
-                // surrounding try/catch catches numberformatexception from this
-                if (Strings.isNullOrEmpty(size)) {
-                    printUsageAndExit("Key size (in bits) is required for key type " + keyType);
-                }
-                Integer keySize = Integer.decode(size);
-                if (keySize % 8 != 0) {
-                    printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
-                }
-
-                jwk = OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
-            } else if (keyType.equals(KeyType.EC)) {
-                if (Strings.isNullOrEmpty(crv)) {
-                    printUsageAndExit("Curve is required for key type " + keyType);
-                }
-                Curve keyCurve = Curve.parse(crv);
-
-                if (!ecCurves.contains(keyCurve)) {
-                    printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
-                }
-
-                jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
-            } else if (keyType.equals(KeyType.OKP)) {
-                if (Strings.isNullOrEmpty(crv)) {
-                    printUsageAndExit("Curve is required for key type " + keyType);
-                }
-                Curve keyCurve = Curve.parse(crv);
-
-                if (!okpCurves.contains(keyCurve)) {
-                    printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
-                }
-
-                jwk = OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
-            } else {
-                printUsageAndExit("Unknown key type: " + keyType);
-            }
-
-            // round trip it through GSON to get a prettyprinter
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            if (outFile == null) {
-
-                System.out.println("Full key:");
-
-                printKey(keySet, jwk, gson);
-
-                if (pubKey) {
-                    System.out.println(); // spacer
-
-                    // also print public key, if possible
-                    JWK pub = jwk.toPublicJWK();
-
-                    if (pub != null) {
-                        System.out.println("Public key:");
-                        printKey(keySet, pub, gson);
-                    } else {
-                        System.out.println("No public key.");
-                    }
-                }
-            } else {
-                writeKeyToFile(keySet, outFile, pubOutFile, jwk, gson);
-            }
+            outputKey(keySet, pubKey, outFile, pubOutFile, jwk);
         } catch (NumberFormatException e) {
-            printUsageAndExit("Invalid key size: " + e.getMessage());
+            throw printUsageAndExit("Invalid key size: " + e.getMessage());
         } catch (ParseException e) {
-            printUsageAndExit("Failed to parse arguments: " + e.getMessage());
+            throw printUsageAndExit("Failed to parse arguments: " + e.getMessage());
         } catch (java.text.ParseException e) {
-            printUsageAndExit("Could not parse existing KeySet: " + e.getMessage());
+            throw printUsageAndExit("Could not parse existing KeySet: " + e.getMessage());
         } catch (IOException e) {
-            printUsageAndExit("Could not read existing KeySet: " + e.getMessage());
+            throw printUsageAndExit("Could not read existing KeySet: " + e.getMessage());
         }
     }
+
+    private static void configureCommandLineOptions(Options options) {
+        options.addOption("t", "type", true, "Key Type, one of: " + KeyType.RSA.getValue() + ", " + KeyType.OCT.getValue() + ", " +
+            KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
+        options.addOption("s", "size", true,
+            "Key Size in bits, required for RSA and oct key types. Must be an integer divisible by 8");
+        options.addOption("u", "usage", true, "Usage, one of: enc, sig (optional)");
+        options.addOption("a", "algorithm", true, "Algorithm (optional)");
+        options.addOption("i", "id", true, "Key ID (optional), one will be generated if not defined");
+        options.addOption("I", "noGenerateId", false, "Don't generate a Key ID if none defined");
+        options.addOption("p", "showPubKey", false, "Display public key separately");
+        options.addOption("P", "pubKeyOutput", true, "Write public key to file (will append to existing KeySet if -S is used), "
+            + "No Display of Key Material, Requires the usage of -o as well.");
+        options.addOption("c", "curve", true,
+            "Key Curve, required for EC or OKP key type. Must be one of "
+                + Joiner.on(", ").join(ecCurves)
+                + " for EC keys or one of "
+                + Joiner.on(", ").join(okpCurves)
+                + " for OKP keys.");
+        options.addOption("S", "useKeySet", false, "Wrap the generated key in a KeySet");
+        options.addOption("o", "output", true, "Write output to file (will append to existing KeySet if -S is used), "
+            + "No Display of Key Material");
+    }
+
 
     private static String generateKid(KeyUse keyUse) {
         String prefix = keyUse == null ? "" : keyUse.identifier();
         return prefix + (System.currentTimeMillis() / 1000);
     }
 
+    private static KeyUse validateKeyUse(String use) {
+        if (use == null) {
+            return null;
+        }
+        if (use.equals("sig")) {
+            return KeyUse.SIGNATURE;
+        } else if (use.equals("enc")) {
+            return KeyUse.ENCRYPTION;
+        } else {
+            throw printUsageAndExit("Invalid key usage, must be 'sig' or 'enc', got " + use);
+        }
+    }
+
+    private static JWK makeKey(String size, String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+        JWK jwk;
+        if (keyType.equals(KeyType.RSA)) {
+            jwk = makeRsaKey(kid, size, keyType, keyUse, keyAlg);
+        } else if (keyType.equals(KeyType.OCT)) {
+            jwk = makeOctKey(kid, size, keyType, keyUse, keyAlg);
+        } else if (keyType.equals(KeyType.EC)) {
+            jwk = makeEcKey(kid, crv, keyType, keyUse, keyAlg);
+        } else if (keyType.equals(KeyType.OKP)) {
+            jwk = makeOkpKey(kid, crv, keyType, keyUse, keyAlg);
+        } else {
+            throw printUsageAndExit("Unknown key type: " + keyType);
+        }
+        return jwk;
+    }
+
+    private static JWK makeOkpKey(String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+        if (Strings.isNullOrEmpty(crv)) {
+            throw printUsageAndExit("Curve is required for key type " + keyType);
+        }
+        Curve keyCurve = Curve.parse(crv);
+
+        if (!okpCurves.contains(keyCurve)) {
+            throw printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+        }
+
+        return OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+    }
+
+    private static JWK makeEcKey(String kid, String crv, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+        if (Strings.isNullOrEmpty(crv)) {
+            throw printUsageAndExit("Curve is required for key type " + keyType);
+        }
+        Curve keyCurve = Curve.parse(crv);
+
+        if (!ecCurves.contains(keyCurve)) {
+            throw printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+        }
+
+        return ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
+    }
+
+    private static JWK makeOctKey(String kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+        if (Strings.isNullOrEmpty(size)) {
+            throw printUsageAndExit("Key size (in bits) is required for key type " + keyType);
+        }
+
+        // surrounding try/catch catches numberformatexception from this
+        Integer keySize = Integer.decode(size);
+        if (keySize % 8 != 0) {
+            throw printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
+        }
+
+        return OctetSequenceKeyMaker.make(keySize, keyUse, keyAlg, kid);
+    }
+
+    private static JWK makeRsaKey(String kid, String size, KeyType keyType, KeyUse keyUse, Algorithm keyAlg) {
+        if (Strings.isNullOrEmpty(size)) {
+            throw printUsageAndExit("Key size (in bits) is required for key type " + keyType);
+        }
+
+        // surrounding try/catch catches numberformatexception from this
+        Integer keySize = Integer.decode(size);
+        if (keySize % 8 != 0) {
+            throw printUsageAndExit("Key size (in bits) must be divisible by 8, got " + keySize);
+        }
+
+        return RSAKeyMaker.make(keySize, keyUse, keyAlg, kid);
+    }
+
+    private static void outputKey(boolean keySet, boolean pubKey, String outFile, String pubOutFile, JWK jwk) throws IOException, java.text.ParseException {
+        // round trip it through GSON to get a prettyprinter
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        if (outFile == null) {
+
+            System.out.println("Full key:");
+
+            printKey(keySet, jwk, gson);
+
+            if (pubKey) {
+                System.out.println(); // spacer
+
+                // also print public key, if possible
+                JWK pub = jwk.toPublicJWK();
+
+                if (pub != null) {
+                    System.out.println("Public key:");
+                    printKey(keySet, pub, gson);
+                } else {
+                    System.out.println("No public key.");
+                }
+            }
+        } else {
+            writeKeyToFile(keySet, outFile, pubOutFile, jwk, gson);
+        }
+    }
+
     private static void writeKeyToFile(boolean keySet, String outFile, String pubOutFile, JWK jwk, Gson gson) throws IOException,
-            java.text.ParseException {
+        java.text.ParseException {
         JsonElement json;
         JsonElement pubJson;
         File output = new File(outFile);
@@ -251,7 +286,8 @@ public class Launcher {
     }
 
     // print out a usage message and quit
-    private static void printUsageAndExit(String message) {
+    // return exception so that we can "throw" this for control flow analysis
+    private static IllegalArgumentException printUsageAndExit(String message) {
         if (message != null) {
             System.err.println(message);
         }
@@ -264,5 +300,6 @@ public class Launcher {
 
         // kill the program
         System.exit(1);
+        return new IllegalArgumentException("Program was called with invalid arguments");
     }
 }
