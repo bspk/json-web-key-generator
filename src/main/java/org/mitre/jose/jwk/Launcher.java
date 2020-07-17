@@ -10,6 +10,7 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -44,29 +45,36 @@ public class Launcher {
     private static Options options;
 
     private static List<Curve> ecCurves = Arrays.asList(
-    	Curve.P_256, Curve.SECP256K1, Curve.P_384, Curve.P_521);
+        Curve.P_256, Curve.SECP256K1, Curve.P_384, Curve.P_521);
 
     private static List<Curve> okpCurves = Arrays.asList(
-    	Curve.Ed25519, Curve.Ed448, Curve.X25519, Curve.X448);
+        Curve.Ed25519, Curve.Ed448, Curve.X25519, Curve.X448);
 
     public static void main(String[] args) {
 
-    	Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleProvider());
 
         options = new Options();
 
         options.addOption("t", true, "Key Type, one of: " + KeyType.RSA.getValue() + ", " + KeyType.OCT.getValue() + ", " +
-                KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
+            KeyType.EC.getValue() + ", " + KeyType.OKP.getValue());
         options.addOption("s", true, "Key Size in bits, required for RSA and oct key types. Must be an integer divisible by 8");
         options.addOption("u", true, "Usage, one of: enc, sig (optional)");
         options.addOption("a", true, "Algorithm (optional)");
         options.addOption("i", true, "Key ID (optional), one will be generated if not defined");
         options.addOption("I", false, "Don't generate a Key ID if none defined");
         options.addOption("p", false, "Display public key separately");
-        options.addOption("c", true, "Key Curve, required for EC or OKP key type. Must be one of " + Joiner.on(", ").join(ecCurves)
-        	+ " for EC keys or one of " + Joiner.on(", ").join(okpCurves) + " for OKP keys.");
+        options.addOption("P", true, "Write public key to file (will append to existing KeySet if -S is used), "
+            + "No Display of Key Material, Requires the usage of -o as well.");
+        options.addOption("c", true,
+            "Key Curve, required for EC or OKP key type. Must be one of "
+                + Joiner.on(", ").join(ecCurves)
+                + " for EC keys or one of "
+                + Joiner.on(", ").join(okpCurves)
+                + " for OKP keys.");
         options.addOption("S", false, "Wrap the generated key in a KeySet");
-        options.addOption("o", true, "Write output to file (will append to existing KeySet if -S is used), No Display of Key Material");
+        options.addOption("o", true, "Write output to file (will append to existing KeySet if -S is used), "
+            + "No Display of Key Material");
 
         CommandLineParser parser = new PosixParser();
         try {
@@ -82,6 +90,7 @@ public class Launcher {
             boolean pubKey = cmd.hasOption("p");
             boolean doNotGenerateKid = cmd.hasOption("I");
             String outFile = cmd.getOptionValue("o");
+            String pubOutFile = cmd.getOptionValue("P");
 
             // check for required fields
             if (kty == null) {
@@ -144,7 +153,7 @@ public class Launcher {
                 Curve keyCurve = Curve.parse(crv);
 
                 if (!ecCurves.contains(keyCurve)) {
-                	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+                    printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
                 }
 
                 jwk = ECKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
@@ -155,7 +164,7 @@ public class Launcher {
                 Curve keyCurve = Curve.parse(crv);
 
                 if (!okpCurves.contains(keyCurve)) {
-                	printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
+                    printUsageAndExit("Curve " + crv + " is not valid for key type " + keyType);
                 }
 
                 jwk = OKPKeyMaker.make(keyCurve, keyUse, keyAlg, kid);
@@ -185,9 +194,8 @@ public class Launcher {
                     }
                 }
             } else {
-                writeKeyToFile(keySet, outFile, jwk, gson);
+                writeKeyToFile(keySet, outFile, pubOutFile, jwk, gson);
             }
-
         } catch (NumberFormatException e) {
             printUsageAndExit("Invalid key size: " + e.getMessage());
         } catch (ParseException e) {
@@ -204,35 +212,40 @@ public class Launcher {
         return prefix + (System.currentTimeMillis() / 1000);
     }
 
-    private static void writeKeyToFile(boolean keySet, String outFile, JWK jwk, Gson gson) throws IOException,
+    private static void writeKeyToFile(boolean keySet, String outFile, String pubOutFile, JWK jwk, Gson gson) throws IOException,
             java.text.ParseException {
         JsonElement json;
+        JsonElement pubJson;
         File output = new File(outFile);
         if (keySet) {
-            List<JWK> existingKeys = output.exists() ? JWKSet.load(output).getKeys() : Collections.<JWK>emptyList();
+            List<JWK> existingKeys = output.exists() ? JWKSet.load(output).getKeys() : Collections.emptyList();
             List<JWK> jwkList = new ArrayList<>(existingKeys);
             jwkList.add(jwk);
             JWKSet jwkSet = new JWKSet(jwkList);
-            json = new JsonParser().parse(jwkSet.toJSONObject(false).toJSONString());
+            json = JsonParser.parseString(jwkSet.toJSONObject(false).toJSONString());
+            pubJson = JsonParser.parseString(jwkSet.toJSONObject(true).toJSONString());
         } else {
-            json = new JsonParser().parse(jwk.toJSONString());
+            json = JsonParser.parseString(jwk.toJSONString());
+            pubJson = JsonParser.parseString(jwk.toPublicJWK().toJSONString());
         }
-        Writer os = null;
-        try {
-            os = new BufferedWriter(new FileWriter(output));
+        try (Writer os = new BufferedWriter(new FileWriter(output))) {
             os.write(gson.toJson(json));
-        } finally {
-            os.close();
         }
+        if (pubOutFile != null) {
+            try (Writer os = new BufferedWriter(new FileWriter(pubOutFile))) {
+                os.write(gson.toJson(pubJson));
+            }
+        }
+
     }
 
     private static void printKey(boolean keySet, JWK jwk, Gson gson) {
         if (keySet) {
             JWKSet jwkSet = new JWKSet(jwk);
-            JsonElement json = new JsonParser().parse(jwkSet.toJSONObject(false).toJSONString());
+            JsonElement json = JsonParser.parseString(jwkSet.toJSONObject(false).toJSONString());
             System.out.println(gson.toJson(json));
         } else {
-            JsonElement json = new JsonParser().parse(jwk.toJSONString());
+            JsonElement json = JsonParser.parseString(jwk.toJSONString());
             System.out.println(gson.toJson(json));
         }
     }
@@ -243,10 +256,10 @@ public class Launcher {
             System.err.println(message);
         }
 
-        List<String> optionOrder = ImmutableList.of("t", "s", "c", "u", "a", "i", "I", "p", "S", "o");
+        List<String> optionOrder = ImmutableList.of("t", "s", "c", "u", "a", "i", "I", "p", "P", "S", "o");
 
         HelpFormatter formatter = new HelpFormatter();
-        formatter.setOptionComparator((o1, o2) -> optionOrder.indexOf(((Option)o1).getOpt()) - optionOrder.indexOf(((Option)o2).getOpt()));
+        formatter.setOptionComparator(Comparator.comparingInt(o -> optionOrder.indexOf(((Option) o).getOpt())));
         formatter.printHelp("java -jar json-web-key-generator.jar -t <keyType> [options]", options);
 
         // kill the program
