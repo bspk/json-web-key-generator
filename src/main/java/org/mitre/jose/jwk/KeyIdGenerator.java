@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 
 import com.google.common.hash.Hashing;
 import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 
 /**
@@ -31,6 +32,11 @@ public class KeyIdGenerator {
 		return Base64URL.encode(bytes).toString();
 	});
 
+	public static KeyIdGenerator SHA1 = new KeyIdGenerator("sha1", (use, pubKey) -> {
+		byte[] bytes = Hashing.sha1().hashBytes(pubKey).asBytes();
+		return Base64.encode(bytes).toString();
+	});
+
 	public static KeyIdGenerator NONE = new KeyIdGenerator("none", (use, pubKey) -> {
 		return null;
 	});
@@ -52,7 +58,7 @@ public class KeyIdGenerator {
 	}
 
 	public static List<KeyIdGenerator> values() {
-		return List.of(DATE, TIMESTAMP, SHA256, NONE);
+		return List.of(DATE, TIMESTAMP, SHA256, SHA1, NONE);
 	}
 
 	public static KeyIdGenerator get(String name) {
