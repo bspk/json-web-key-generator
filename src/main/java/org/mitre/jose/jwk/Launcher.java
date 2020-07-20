@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.math.BigInteger;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
@@ -370,7 +372,7 @@ public class Launcher {
 	public static Certificate selfSign(PublicKey pub, PrivateKey priv, String subjectDN, String signatureAlgorithm)
 	{
 		try {
-			X500Name dn = new X500Name("CN=" + subjectDN);
+			X500Name dn = new X500Name("CN=" + URLEncoder.encode(subjectDN, Charset.defaultCharset()));
 
 			BigInteger certSerialNumber = BigInteger.valueOf(Instant.now().toEpochMilli());
 
