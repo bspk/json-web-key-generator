@@ -5,22 +5,37 @@ A commandline Java-based generator for JSON Web Keys (JWK) and JSON Private/Shar
 
 =====================
 
-To compile, run `mvn package`. This will generate a `json-web-key-generator-0.5-SNAPSHOT-jar-with-dependencies.jar` in the `/target` directory.
+To compile, run `mvn package`. This will generate a `json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar` in the `/target` directory.
 
-To generate a key, run `java -jar target/json-web-key-generator-0.5-SNAPSHOT-jar-with-dependencies.jar -t <keytype>`. Several other arguments are defined which may be required depending on your key type:
+To generate a key, run `java -jar target/json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar -t <keytype>`. Several other arguments are defined which may be required depending on your key type:
 
 ```
- -a <arg>   Algorithm (optional)
- -c <arg>   Key Curve, required for EC key type. Must be one of P-256,
-            P-384, P-521
- -i <arg>   Key ID (optional), one will be generated if not defined
- -I         Don't generate a Key ID if none defined
- -o <arg>   Write output to file (will append to existing KeySet if -S is
-            used), No Display of Key Material
- -p         Display public key separately
- -s <arg>   Key Size in bits, required for RSA and oct key types. Must be
-            an integer divisible by 8
- -S         Wrap the generated key in a KeySet
- -t <arg>   Key Type, one of: RSA, oct, EC
- -u <arg>   Usage, one of: enc, sig (optional)
+usage: java -jar json-web-key-generator.jar -t <keyType> [options]
+ -t,--type <arg>           Key Type, one of: RSA, oct, EC, OKP
+ -s,--size <arg>           Key Size in bits, required for RSA and oct key
+                           types. Must be an integer divisible by 8
+ -c,--curve <arg>          Key Curve, required for EC or OKP key type.
+                           Must be one of P-256, secp256k1, P-384, P-521
+                           for EC keys or one of Ed25519, Ed448, X25519,
+                           X448 for OKP keys.
+ -u,--usage <arg>          Usage, one of: enc, sig (optional)
+ -a,--algorithm <arg>      Algorithm (optional)
+ -i,--id <arg>             Key ID (optional), one will be generated if not
+                           defined
+ -g,--idGenerator <arg>    Key ID generation method (optional). Can be one
+                           of: date, timestamp, sha256, sha1, none. If
+                           omitted, generator method defaults to
+                           'timestamp'.
+ -I,--noGenerateId         <deprecated> Don't generate a Key ID.
+                           (Deprecated, use '-g none' instead.)
+ -p,--showPubKey           Display public key separately (if applicable)
+ -S,--keySet               Wrap the generated key in a KeySet
+ -o,--output <arg>         Write output to file. Will append to existing
+                           KeySet if -S is used. Key material will not be
+                           displayed to console.
+ -P,--pubKeyOutput <arg>   Write public key to separate file. Will append
+                           to existing KeySet if -S is used. Key material
+                           will not be displayed to console. '-o/--output'
+                           must be declared as well.
+ -x,--x509                 Display keys in X509 PEM format
 ```
