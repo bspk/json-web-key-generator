@@ -110,7 +110,8 @@ public class Launcher {
 					generator = KeyIdGenerator.get(cmd.getOptionValue("g"));
 				}
 			} else {
-				generator = new KeyIdGenerator(null, (u, p) -> kid);
+				generator = KeyIdGenerator.specified(kid);
+
 			}
 
 			// check for required fields

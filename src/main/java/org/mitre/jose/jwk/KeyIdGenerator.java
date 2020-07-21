@@ -68,6 +68,8 @@ public class KeyIdGenerator {
 			.orElse(TIMESTAMP);
 	}
 
-
+	public static KeyIdGenerator specified(String kid) {
+		return new KeyIdGenerator(null, (u, p) -> kid);
+	}
 }
 
