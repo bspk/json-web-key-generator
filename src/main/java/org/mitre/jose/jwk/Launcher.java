@@ -294,7 +294,7 @@ public class Launcher {
 					if (keyType.equals(KeyType.RSA)) {
 						Certificate cert = selfSign(jwk.toRSAKey().toPublicKey(),
 							jwk.toRSAKey().toPrivateKey(),
-							jwk.getKeyID(),
+							jwk.getKeyID() != null ? jwk.getKeyID() : jwk.computeThumbprint().toString(),
 							"SHA256withRSA"
 							);
 						writePEMToConsole(
@@ -305,7 +305,7 @@ public class Launcher {
 					} else if (keyType.equals(KeyType.EC)) {
 						Certificate cert = selfSign(jwk.toECKey().toPublicKey(),
 							jwk.toECKey().toPrivateKey(),
-							jwk.getKeyID(),
+							jwk.getKeyID() != null ? jwk.getKeyID() : jwk.computeThumbprint().toString(),
 							"SHA256withECDSA"
 							);
 						writePEMToConsole(
