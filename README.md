@@ -4,13 +4,13 @@ A command-line Java-based generator for JSON Web Keys (JWK) and JSON Private/Sha
 Examples:
 ```
 # Create a new RSA Private and public key and print it to the console as JWK Set
-$ docker run --rm legion2/json-web-key-generator -t RSA -s 2048 -S -p
+$ docker run --rm legion2/json-web-key-generator -t RSA -s 4096 -S -p
 
 # Create a new RSA key with the id 'mykeyid' and print it to the console
-$ docker run --rm legion2/json-web-key-generator -t RSA -s 2048 -p -i mykeyid
+$ docker run --rm legion2/json-web-key-generator -t RSA -s 4096 -p -i mykeyid
 
 # Add a new RSA key to an existing JWK Set file
-$ docker run --rm -v "${PWD}:/keys" legion2/json-web-key-generator -t RSA -s 2048 -o /keys/jwks.json -S
+$ docker run --rm -v "${PWD}:/keys" legion2/json-web-key-generator -t RSA -s 4096 -o /keys/jwks.json -S
 ```
 
 ## Getting Started

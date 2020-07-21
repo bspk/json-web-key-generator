@@ -2,7 +2,7 @@ FROM maven:3-jdk-14 AS builder
 
 WORKDIR /build
 
-COPY ./ .
+COPY . .
 
 RUN mvn package
 
