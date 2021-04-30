@@ -1,16 +1,16 @@
-# json-web-key-generator [![Docker Pulls](https://img.shields.io/docker/pulls/legion2/json-web-key-generator)](https://hub.docker.com/r/legion2/json-web-key-generator)
+# json-web-key-generator
 A command-line Java-based generator for JSON Web Keys (JWK) and JSON Private/Shared Keys (JPSKs).
 
 Examples:
 ```
 # Create a new RSA Private and public key and print it to the console as JWK Set
-$ docker run --rm legion2/json-web-key-generator -t RSA -s 4096 -S -p
+$ docker run --rm ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -S -p
 
 # Create a new RSA key with the id 'mykeyid' and print it to the console
-$ docker run --rm legion2/json-web-key-generator -t RSA -s 4096 -p -i mykeyid
+$ docker run --rm ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -p -i mykeyid
 
 # Add a new RSA key to an existing JWK Set file
-$ docker run --rm -v "${PWD}:/keys" legion2/json-web-key-generator -t RSA -s 4096 -o /keys/jwks.json -S
+$ docker run --rm -v "${PWD}:/keys" ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -o /keys/jwks.json -S
 ```
 
 ## Getting Started
