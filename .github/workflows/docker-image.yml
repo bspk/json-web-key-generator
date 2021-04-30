@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,4 +29,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${IMAGE_REPOSITORY}:latest
+          tags: ghcr.io/${{ env.IMAGE_REPOSITORY }}:latest
