@@ -46,13 +46,28 @@ Example:
 
 
 ```bash
-TAG="your/tag:here"
+# Optional TAG
+#TAG="your/tag:here"
+# Example: TAG="beszan/json-web-key-generator:latest"
 $ docker build -t $TAG .
+```
+
+If building from git tags then run the following to store the *tag*, and the *commit*
+in the docker image label.
+
+```bash
+TAG=$(git describe --abbrev=0 --tags)
+REV=$(git log -1 --format=%h)
+docker build -t beszan/json-web-key-generator:$TAG --build-arg GIT_COMMIT=$REV --build-arg GIT_TAG=$TAG .
+docker push beszan/json-web-key-generator:$TAG
+
+# or push all the tags
+docker push beszan/json-web-key-generator --all-tags
 ```
 
 ### Run from docker
 
-```
+```bash
 $ docker run beszan/json-web-key-generator:latest -t RSA -s 2048
 Full key:
 {
