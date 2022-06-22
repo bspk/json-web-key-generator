@@ -1,13 +1,25 @@
-json-web-key-generator
-======================
+# json-web-key-generator
+A command-line Java-based generator for JSON Web Keys (JWK) and JSON Private/Shared Keys (JPSKs).
 
-A commandline Java-based generator for JSON Web Keys (JWK) and JSON Private/Shared Keys (JPSKs).
+Examples:
+```
+# Create a new RSA Private and public key and print it to the console as JWK Set
+$ docker run --rm ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -S -p
 
-=====================
+# Create a new RSA key with the id 'mykeyid' and print it to the console
+$ docker run --rm ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -p -i mykeyid
 
-To compile, run `mvn package`. This will generate a `json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar` in the `/target` directory.
+# Add a new RSA key to an existing JWK Set file
+$ docker run --rm -v "${PWD}:/keys" ghcr.io/legion2/json-web-key-generator -t RSA -s 4096 -o /keys/jwks.json -S
+```
 
-To generate a key, run `java -jar target/json-web-key-generator-0.9-SNAPSHOT-jar-with-dependencies.jar -t <keytype>`. Several other arguments are defined which may be required depending on your key type:
+## Getting Started
+
+To compile, run `mvn package`.
+This will generate a `json-web-key-generator.jar` in the `target` directory.
+
+To generate a key, run `java -jar json-web-key-generator.jar -t <keytype>`.
+Several other arguments are defined which may be required depending on your key type:
 
 ```
 usage: java -jar json-web-key-generator.jar -t <keyType> [options]
@@ -39,3 +51,6 @@ usage: java -jar json-web-key-generator.jar -t <keyType> [options]
                            must be declared as well.
  -x,--x509                 Display keys in X509 PEM format
 ```
+
+## Use Docker
+When using the docker image and write to a file you must mount that file in the docker container.
