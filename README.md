@@ -48,7 +48,7 @@ Example:
 ```bash
 # Optional TAG
 #TAG="your/tag:here"
-# Example: TAG="beszan/json-web-key-generator:latest"
+# Example: TAG="<your_docker_id>/json-web-key-generator:latest"
 $ docker build -t $TAG .
 ```
 
@@ -58,17 +58,19 @@ in the docker image label.
 ```bash
 TAG=$(git describe --abbrev=0 --tags)
 REV=$(git log -1 --format=%h)
-docker build -t beszan/json-web-key-generator:$TAG --build-arg GIT_COMMIT=$REV --build-arg GIT_TAG=$TAG .
-docker push beszan/json-web-key-generator:$TAG
+docker build -t <your_docker_id>/json-web-key-generator:$TAG --build-arg GIT_COMMIT=$REV --build-arg GIT_TAG=$TAG .
+docker push <your_docker_id>/json-web-key-generator:$TAG
 
 # or push all the tags
-docker push beszan/json-web-key-generator --all-tags
+docker push <your_docker_id>/json-web-key-generator --all-tags
 ```
 
 ### Run from docker
 
+Example of running the app  within a docker container to generate a 2048 bit RSA JWK.
+
 ```bash
-$ docker run beszan/json-web-key-generator:latest -t RSA -s 2048
+$ docker run --rm <your_docker_id>/json-web-key-generator:latest -t RSA -s 2048
 Full key:
 {
   "p": "7blCsqibq1iTDOTxpLU9T5WEy5DgbwB65fXFEeU2y58mNUjXBFhDWppuEpJ7iMJtMsOhB60Mmf8ujRNVp8KmVT9eF6MwO7tW7sprq45YncwC8pZIpMqDdKOvB9moHVW9FzPlZimUzJsfgPAQc73SrpOSqwGHvPxfjvfO-kM_7wc",
