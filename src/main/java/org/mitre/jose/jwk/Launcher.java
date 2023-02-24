@@ -407,8 +407,8 @@ public class Launcher {
 			List<JWK> jwkList = new ArrayList<>(existingKeys);
 			jwkList.add(jwk);
 			JWKSet jwkSet = new JWKSet(jwkList);
-			json = JsonParser.parseString(jwkSet.toJSONObject(false).toJSONString());
-			pubJson = JsonParser.parseString(jwkSet.toJSONObject(true).toJSONString());
+			json = JsonParser.parseString(jwkSet.toString(false));
+			pubJson = JsonParser.parseString(jwkSet.toString(true));
 		} else {
 			json = JsonParser.parseString(jwk.toJSONString());
 			pubJson = JsonParser.parseString(jwk.toPublicJWK().toJSONString());
@@ -427,7 +427,7 @@ public class Launcher {
 	private static void printKey(boolean keySet, JWK jwk, Gson gson) {
 		if (keySet) {
 			JWKSet jwkSet = new JWKSet(jwk);
-			JsonElement json = JsonParser.parseString(jwkSet.toJSONObject(false).toJSONString());
+			JsonElement json = JsonParser.parseString(jwkSet.toString(false));
 			System.out.println(gson.toJson(json));
 		} else {
 			JsonElement json = JsonParser.parseString(jwk.toJSONString());
