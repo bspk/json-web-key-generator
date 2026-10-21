@@ -9,7 +9,7 @@ RUN mvn package
 
 # Build the image with the new .jar binary
 # We need a jre 11+ starter container for this
-FROM openjdk:11-jre-slim
+FROM amazoncorretto:11-alpine3.24
 ARG GIT_COMMIT=unspecified
 ARG GIT_TAG=unspecified
 LABEL org.opencontainers.image.authors="Besmir Zanaj"
